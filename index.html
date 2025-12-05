@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="Free Baduk/Weiqi/Go & Chess game clock PWA with Byo-yomi, Fischer, Canadian overtime, and more. Works offline, installable on any device. Perfect for tournament and casual play.">
+    <meta name="keywords" content="baduk, go, weiqi, chess, game clock, timer, byo-yomi, fischer, canadian overtime, PWA, progressive web app">
+    <meta name="author" content="SoumyaK4">
+    <meta name="application-name" content="Baduk Clock">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Baduk Clock">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Baduk Clock - Go/Baduk Game Timer">
+    <meta property="og:description" content="Game clock for Baduk/Go/Chess with all timing systems: Byo-yomi, Fischer, Canadian, and more. Works offline as a PWA.">
+    <meta property="og:image" content="icons/icon-512.png">
+    <meta property="og:site_name" content="Baduk Clock">
+    
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Baduk Clock - Go/Baduk Game Timer">
+    <meta name="twitter:description" content="Game clock for Baduk/Go/Chess with all timing systems. Works offline as a PWA.">
+    <meta name="twitter:image" content="icons/icon-512.png">
+    
+    <title>Baduk Clock - Go/Baduk Game Timer with Byo-yomi, Fischer & More</title>
+    <link rel="canonical" href="/">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+    <link rel="stylesheet" href="styles.css">
+    
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Baduk Clock",
+        "description": "A Game clock for Baduk (Go/Weiqi) & Chess featuring all major timing systems including Byo-yomi, Fischer increment, Canadian overtime, and more. Works offline as a Progressive Web App.",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Web",
+        "featureList": [
+            "Byo-yomi (Japanese) timing",
+            "Fischer increment timing",
+            "Canadian byo-yomi timing",
+            "Absolute timing",
+            "Simple per-move timing",
+            "Custom time settings",
+            "Offline support",
+            "Audio alerts",
+            "Visual warnings",
+            "Mobile-friendly design"
+        ],
+        "screenshot": "/ss/timer.png",
+        "softwareVersion": "1.0.0"
+    }
+    </script>
+</head>
+<body>
+    <div id="app">
+        <main id="clock-screen" class="screen active" role="main">
+            <div id="player-black" class="player-area" data-player="black" role="button" aria-label="Black player clock - tap to switch turns">
+                <div class="player-info">
+                    <span class="player-label">Black</span>
+                    <span class="time-mode-label"></span>
+                </div>
+                <div class="time-display">
+                    <span class="main-time">00:00</span>
+                    <span class="period-info"></span>
+                </div>
+                <div class="move-count">Moves: <span>0</span></div>
+            </div>
+
+            <nav id="control-bar" aria-label="Game controls">
+                <button id="btn-settings" class="control-btn" aria-label="Open settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </button>
+                <button id="btn-pause" class="control-btn" aria-label="Pause or resume game">
+                    <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <rect x="6" y="4" width="4" height="16"></rect>
+                        <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                    <svg class="icon-play hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <polygon points="5,3 19,12 5,21"></polygon>
+                    </svg>
+                </button>
+                <button id="btn-reset" class="control-btn" aria-label="Reset game">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <polyline points="1 4 1 10 7 10"></polyline>
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                    </svg>
+                </button>
+            </nav>
+
+            <div id="player-white" class="player-area" data-player="white" role="button" aria-label="White player clock - tap to switch turns">
+                <div class="player-info">
+                    <span class="player-label">White</span>
+                    <span class="time-mode-label"></span>
+                </div>
+                <div class="time-display">
+                    <span class="main-time">00:00</span>
+                    <span class="period-info"></span>
+                </div>
+                <div class="move-count">Moves: <span>0</span></div>
+            </div>
+        </main>
+
+        <div id="settings-screen" class="screen">
+            <header class="settings-header">
+                <button id="btn-back" class="back-btn" aria-label="Back to clock">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+                <h1>Time Settings</h1>
+            </header>
+
+            <div class="settings-content">
+                <div class="setting-group">
+                    <label for="time-system">Time System</label>
+                    <select id="time-system">
+                        <option value="absolute">Absolute (Simple)</option>
+                        <option value="byoyomi" selected>Byo-yomi (Japanese)</option>
+                        <option value="fischer">Fischer (Increment)</option>
+                        <option value="canadian">Canadian Byo-yomi</option>
+                        <option value="simple">Simple (Per Move)</option>
+                    </select>
+                </div>
+
+                <div id="absolute-settings" class="time-settings hidden">
+                    <div class="setting-group">
+                        <label>Total Time</label>
+                        <div class="time-input-group">
+                            <input type="number" id="absolute-hours" min="0" max="10" value="0" placeholder="H" aria-label="Hours">
+                            <span>:</span>
+                            <input type="number" id="absolute-minutes" min="0" max="59" value="30" placeholder="M" aria-label="Minutes">
+                            <span>:</span>
+                            <input type="number" id="absolute-seconds" min="0" max="59" value="0" placeholder="S" aria-label="Seconds">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="byoyomi-settings" class="time-settings">
+                    <div class="setting-group">
+                        <label>Main Time</label>
+                        <div class="time-input-group">
+                            <input type="number" id="byoyomi-main-hours" min="0" max="10" value="0" placeholder="H" aria-label="Hours">
+                            <span>:</span>
+                            <input type="number" id="byoyomi-main-minutes" min="0" max="59" value="10" placeholder="M" aria-label="Minutes">
+                            <span>:</span>
+                            <input type="number" id="byoyomi-main-seconds" min="0" max="59" value="0" placeholder="S" aria-label="Seconds">
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <label for="byoyomi-periods">Byo-yomi Periods</label>
+                        <input type="number" id="byoyomi-periods" min="1" max="20" value="5">
+                    </div>
+                    <div class="setting-group">
+                        <label>Time per Period</label>
+                        <div class="time-input-group short">
+                            <input type="number" id="byoyomi-period-minutes" min="0" max="10" value="0" placeholder="M" aria-label="Minutes">
+                            <span>:</span>
+                            <input type="number" id="byoyomi-period-seconds" min="1" max="59" value="30" placeholder="S" aria-label="Seconds">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="fischer-settings" class="time-settings hidden">
+                    <div class="setting-group">
+                        <label>Initial Time</label>
+                        <div class="time-input-group">
+                            <input type="number" id="fischer-hours" min="0" max="10" value="0" placeholder="H" aria-label="Hours">
+                            <span>:</span>
+                            <input type="number" id="fischer-minutes" min="0" max="59" value="5" placeholder="M" aria-label="Minutes">
+                            <span>:</span>
+                            <input type="number" id="fischer-seconds" min="0" max="59" value="0" placeholder="S" aria-label="Seconds">
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <label>Increment per Move</label>
+                        <div class="time-input-group short">
+                            <input type="number" id="fischer-increment-minutes" min="0" max="10" value="0" placeholder="M" aria-label="Minutes">
+                            <span>:</span>
+                            <input type="number" id="fischer-increment-seconds" min="0" max="59" value="10" placeholder="S" aria-label="Seconds">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="canadian-settings" class="time-settings hidden">
+                    <div class="setting-group">
+                        <label>Main Time</label>
+                        <div class="time-input-group">
+                            <input type="number" id="canadian-main-hours" min="0" max="10" value="0" placeholder="H" aria-label="Hours">
+                            <span>:</span>
+                            <input type="number" id="canadian-main-minutes" min="0" max="59" value="15" placeholder="M" aria-label="Minutes">
+                            <span>:</span>
+                            <input type="number" id="canadian-main-seconds" min="0" max="59" value="0" placeholder="S" aria-label="Seconds">
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <label>Overtime Period</label>
+                        <div class="time-input-group short">
+                            <input type="number" id="canadian-period-minutes" min="0" max="30" value="5" placeholder="M" aria-label="Minutes">
+                            <span>:</span>
+                            <input type="number" id="canadian-period-seconds" min="0" max="59" value="0" placeholder="S" aria-label="Seconds">
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <label for="canadian-stones">Stones per Period</label>
+                        <input type="number" id="canadian-stones" min="1" max="50" value="15">
+                    </div>
+                </div>
+
+                <div id="simple-settings" class="time-settings hidden">
+                    <div class="setting-group">
+                        <label>Time per Move</label>
+                        <div class="time-input-group short">
+                            <input type="number" id="simple-minutes" min="0" max="10" value="0" placeholder="M" aria-label="Minutes">
+                            <span>:</span>
+                            <input type="number" id="simple-seconds" min="1" max="59" value="30" placeholder="S" aria-label="Seconds">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label for="sound-enabled">Sound Effects</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="sound-enabled" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <section class="saved-settings-section" aria-labelledby="saved-settings-heading">
+                    <h2 id="saved-settings-heading">Saved Settings</h2>
+                    <div class="setting-group">
+                        <input type="text" id="setting-name" placeholder="Setting name..." aria-label="Setting name">
+                        <button id="btn-save-setting" class="action-btn">Save Current</button>
+                    </div>
+                    <div id="saved-settings-list" class="saved-list" role="list"></div>
+                </section>
+
+                <button id="btn-start-game" class="start-btn">Start Game</button>
+            </div>
+
+            <footer class="settings-footer">
+                <button id="btn-about" class="footer-link" aria-label="About Baduk Clock">About</button><br>
+                <a href="https://soumyak4.in" style="color: orange;">Made by SoumyaK4</a>
+            </footer>
+        </div>
+
+        <div id="about-screen" class="screen">
+            <header class="settings-header">
+                <button id="btn-about-back" class="back-btn" aria-label="Back to settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+                <h1>About</h1>
+            </header>
+
+            <article class="about-content">
+                <section class="about-section">
+                    <div class="about-logo">
+                        <img src="icons/icon-192.png" alt="Baduk Clock logo" width="96" height="96">
+                    </div>
+                    <h2>Baduk Clock</h2>
+                    <p class="about-tagline">Game Timer for Go/Baduk/Weiqi/Chess</p>
+                    <p class="about-version">Version 0.7.0</p>
+                </section>
+
+                <section class="about-section">
+                    <h3>What is Baduk Clock?</h3>
+                    <p>Baduk Clock is a free, game timer designed specifically for the ancient board game of Go (also known as Baduk in Korean or Weiqi in Chinese), but it also works for other games that uses similar timing systems. It supports all major timing systems used in professional tournaments and casual play worldwide.</p>
+                    <p>As a Progressive Web App (PWA), Baduk Clock works offline and can be installed on your phone, tablet, or computer for quick access during games.</p>
+                </section>
+
+                <section class="about-section">
+                    <h3>Time Control Systems</h3>
+                    
+                    <div class="time-system-info">
+                        <h4>Byo-yomi (Japanese)</h4>
+                        <p>The most popular timing system in Go. Players have a main time period, followed by multiple overtime periods. Each overtime period resets after making a move. If you run out of time during an overtime period, you lose one period. The game ends when all periods are exhausted.</p>
+                        <p><strong>Example:</strong> 10 minutes main time + 5 periods of 30 seconds each.</p>
+                    </div>
+
+                    <div class="time-system-info">
+                        <h4>Fischer (Increment)</h4>
+                        <p>Named after chess champion Bobby Fischer. Players start with an initial time bank, and a fixed amount of time is added after each move. Unused increment time accumulates, rewarding quick play with a larger time reserve.</p>
+                        <p><strong>Example:</strong> 5 minutes + 10 seconds per move.</p>
+                    </div>
+
+                    <div class="time-system-info">
+                        <h4>Canadian Byo-yomi</h4>
+                        <p>Players have main time, then must complete a set number of moves within each overtime period. The overtime period resets after completing the required number of stones. This system balances between time pressure and allowing deep reading.</p>
+                        <p><strong>Example:</strong> 15 minutes main time + 5 minutes for every 15 stones.</p>
+                    </div>
+
+                    <div class="time-system-info">
+                        <h4>Absolute</h4>
+                        <p>The simplest system. Each player has a fixed amount of total time for the entire game. When your time runs out, you lose. Often called "sudden death" timing.</p>
+                        <p><strong>Example:</strong> 30 minutes total per player.</p>
+                    </div>
+
+                    <div class="time-system-info">
+                        <h4>Simple (Per Move)</h4>
+                        <p>Each player has a fixed amount of time to make each move. The timer resets after every move. Great for fast-paced games and beginners learning to play quickly.</p>
+                        <p><strong>Example:</strong> 30 seconds per move.</p>
+                    </div>
+                </section>
+
+                <section class="about-section">
+                    <h3>How to Use</h3>
+                    <ol class="how-to-list">
+                        <li><strong>Configure Settings:</strong> Choose your time control system and set the desired times.</li>
+                        <li><strong>Start Game:</strong> Tap "Start Game" to begin. The clock starts in paused mode.</li>
+                        <li><strong>Begin Play:</strong> Tap either player's area to start Black's clock (Black always plays first in Go).</li>
+                        <li><strong>Switch Turns:</strong> After making a move, the active player taps their side to switch the clock to their opponent.</li>
+                        <li><strong>Pause/Resume:</strong> Use the pause button to temporarily stop the game.</li>
+                        <li><strong>Reset:</strong> Use the reset button to start a new game with the same settings.</li>
+                    </ol>
+                </section>
+
+                <section class="about-section">
+                    <h3>Features</h3>
+                    <ul class="feature-list">
+                        <li>All major Go timing systems supported</li>
+                        <li>Save custom time settings for quick access</li>
+                        <li>Audio alerts for time warnings and period changes</li>
+                        <li>Visual warnings (yellow for low time, red for critical)</li>
+                        <li>Works offline after first visit</li>
+                        <li>Installable as an app on mobile devices</li>
+                        <li>Clean, mobile-optimized interface</li>
+                        <li>No account required, no data collected</li>
+                    </ul>
+                </section>
+
+                <section class="about-section">
+                    <h3>Install as App</h3>
+                    <p>Baduk Clock is a Progressive Web App. You can install it on your device for offline use:</p>
+                    <ul class="feature-list">
+                        <li><strong>iOS:</strong> Tap the Share button, then "Add to Home Screen"</li>
+                        <li><strong>Android:</strong> Tap the menu, then "Install app" or "Add to Home Screen"</li>
+                        <li><strong>Desktop:</strong> Click the install icon in your browser's address bar</li>
+                    </ul>
+                </section>
+
+                <section class="about-section">
+                    <h3>Privacy</h3>
+                    <p>Baduk Clock respects your privacy. The app runs entirely in your browser and does not collect, store, or transmit any personal data. Your saved settings are stored locally on your device only.</p>
+                </section>
+
+                <section class="about-section about-footer-info">
+                    <a href="https://soumyak4.in" style="color: orange;">Made by SoumyaK4</a>
+                    <p>Initially made for my local Kolkata Baduk Club<br>
+                    Free and open for everyone</p>
+                </section>
+            </article>
+        </div>
+
+        <div id="game-over-modal" class="modal hidden" role="dialog" aria-labelledby="game-over-title" aria-modal="true">
+            <div class="modal-content">
+                <h2 id="game-over-title">Time's Up!</h2>
+                <p id="game-over-message"></p>
+                <div class="modal-buttons">
+                    <button id="btn-new-game" class="action-btn">New Game</button>
+                    <button id="btn-close-modal" class="action-btn secondary">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="install-prompt" class="install-prompt hidden" role="alert">
+            <p>Install Baduk Clock for offline use</p>
+            <button id="btn-install">Install</button>
+            <button id="btn-dismiss-install">Not now</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
