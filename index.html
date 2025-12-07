@@ -196,7 +196,16 @@
                         </div>
                     </div>
                 </div>
-
+                <div class="setting-group">
+                    <label>Max Time (0 = unlimited)</label>
+                        <div class="time-input-group">
+                            <input type="number" id="fischer-max-hours" min="0" max="10" value="0" placeholder="H" aria-label="Hours">
+                            <span>:</span>
+                            <input type="number" id="fischer-max-minutes" min="0" max="59" value="0" placeholder="M" aria-label="Minutes">
+                            <span>:</span>
+                            <input type="number" id="fischer-max-seconds" min="0" max="59" value="0" placeholder="S" aria-label="Seconds">
+                        </div>
+                </div>
                 <div id="canadian-settings" class="time-settings hidden">
                     <div class="setting-group">
                         <label>Main Time</label>

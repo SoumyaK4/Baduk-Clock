@@ -275,7 +275,8 @@ const BadukClock = {
             case 'fischer':
                 settings.fischer = {
                     initialTime: this.getTimeFromInputs('fischer-hours', 'fischer-minutes', 'fischer-seconds'),
-                    increment: this.getTimeFromInputs(null, 'fischer-increment-minutes', 'fischer-increment-seconds')
+                    increment: this.getTimeFromInputs(null, 'fischer-increment-minutes', 'fischer-increment-seconds'),
+                    maxTime: this.getTimeFromInputs('fischer-max-hours', 'fischer-max-minutes', 'fischer-max-seconds')
                 };
                 break;
             case 'canadian':
@@ -318,6 +319,7 @@ const BadukClock = {
             case 'fischer':
                 this.setTimeToInputs(settings.fischer.initialTime, 'fischer-hours', 'fischer-minutes', 'fischer-seconds');
                 this.setTimeToInputs(settings.fischer.increment, null, 'fischer-increment-minutes', 'fischer-increment-seconds');
+                this.setTimeToInputs(settings.fischer.maxTime || 0, 'fischer-max-hours', 'fischer-max-minutes', 'fischer-max-seconds');
                 break;
             case 'canadian':
                 this.setTimeToInputs(settings.canadian.mainTime, 'canadian-main-hours', 'canadian-main-minutes', 'canadian-main-seconds');
@@ -378,6 +380,7 @@ const BadukClock = {
                 case 'fischer':
                     player.time = settings.fischer.initialTime;
                     player.increment = settings.fischer.increment;
+                    player.maxTime = settings.fischer.maxTime || 0;
                     break;
                 case 'canadian':
                     player.time = settings.canadian.mainTime;
@@ -423,6 +426,9 @@ const BadukClock = {
         switch (this.state.system) {
             case 'fischer':
                 currentPlayer.time += currentPlayer.increment;
+                if (currentPlayer.maxTime > 0 && currentPlayer.time > currentPlayer.maxTime) {
+                    currentPlayer.time = currentPlayer.maxTime;
+                }
                 break;
             case 'byoyomi':
                 if (currentPlayer.inOvertime) {
