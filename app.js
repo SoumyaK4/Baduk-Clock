@@ -6,12 +6,14 @@ const BadukClock = {
         activePlayer: null,
         gameOver: false,
         soundEnabled: true,
+        theme: 'midnight',
         settings: {},
         players: {
             black: null,
             white: null
         },
-        lastWarningSoundSecond: -1
+    lastWarningSoundSecond: -1,
+        utterance: null
     },
 
     audioContext: null,
@@ -50,6 +52,7 @@ const BadukClock = {
             gameOverMessage: document.getElementById('game-over-message'),
             btnNewGame: document.getElementById('btn-new-game'),
             btnCloseModal: document.getElementById('btn-close-modal'),
+            themeSelect: document.getElementById('theme-select'),
             settingName: document.getElementById('setting-name'),
             btnSaveSetting: document.getElementById('btn-save-setting'),
             savedSettingsList: document.getElementById('saved-settings-list'),
@@ -74,6 +77,9 @@ const BadukClock = {
         this.elements.btnAboutBack.addEventListener('click', () => this.showScreen('settings'));
         
         this.elements.timeSystem.addEventListener('change', () => this.updateTimeSystemDisplay());
+        this.elements.themeSelect.addEventListener('change', (e) => {
+            this.setTheme(e.target.value);
+        });
         this.elements.soundEnabled.addEventListener('change', (e) => {
             this.state.soundEnabled = e.target.checked;
             localStorage.setItem('badukClock_soundEnabled', this.state.soundEnabled);
@@ -124,6 +130,19 @@ const BadukClock = {
         }
     },
 
+    speak(text) {
+        if (!this.state.soundEnabled || !window.speechSynthesis) return;
+
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+
+        this.state.utterance = new SpeechSynthesisUtterance(text);
+        this.state.utterance.lang = 'en-US';
+        this.state.utterance.rate = 1.5;
+        this.state.utterance.pitch = 1.0;
+        window.speechSynthesis.speak(this.state.utterance);
+    },
+
     playSound(type) {
         if (!this.state.soundEnabled || !this.audioContext) return;
         
@@ -135,17 +154,94 @@ const BadukClock = {
 
         switch (type) {
             case 'click': {
+                // More "stone-like" click
+                const osc = this.audioContext.createOscillator();
+                const noise = this.audioContext.createBufferSource();
+                const gain = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+
+                // Generate a tiny bit of noise for the "thud"
+                const bufferSize = this.audioContext.sampleRate * 0.05;
+                const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                noise.buffer = buffer;
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1000, now);
+                filter.frequency.exponentialRampToValueAtTime(100, now + 0.05);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
+
+                osc.connect(gain);
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.audioContext.destination);
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+
+                osc.start(now);
+                noise.start(now);
+                osc.stop(now + 0.05);
+                noise.stop(now + 0.05);
+                break;
+            }
+            case 'tick': {
                 const osc = this.audioContext.createOscillator();
                 const gain = this.audioContext.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, now);
                 osc.connect(gain);
                 gain.connect(this.audioContext.destination);
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(1000, now);
-                osc.frequency.exponentialRampToValueAtTime(800, now + 0.04);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.02);
                 osc.start(now);
-                osc.stop(now + 0.06);
+                osc.stop(now + 0.02);
+                break;
+            }
+            case 'start': {
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+                break;
+            }
+            case 'pause': {
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.exponentialRampToValueAtTime(440, now + 0.1);
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+                break;
+            }
+            case 'resume': {
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(660, now);
+                osc.frequency.exponentialRampToValueAtTime(990, now + 0.05);
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
                 break;
             }
             case 'period': {
@@ -212,16 +308,17 @@ const BadukClock = {
                 gain.connect(this.audioContext.destination);
                 osc1.type = 'sawtooth';
                 osc2.type = 'triangle';
-                osc1.frequency.setValueAtTime(300, now);
-                osc1.frequency.exponentialRampToValueAtTime(100, now + 0.6);
-                osc2.frequency.setValueAtTime(200, now);
-                osc2.frequency.exponentialRampToValueAtTime(80, now + 0.6);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+                osc1.frequency.setValueAtTime(400, now);
+                osc1.frequency.exponentialRampToValueAtTime(50, now + 1.0);
+                osc2.frequency.setValueAtTime(300, now);
+                osc2.frequency.exponentialRampToValueAtTime(40, now + 1.0);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 1.0);
                 osc1.start(now);
                 osc2.start(now);
-                osc1.stop(now + 0.7);
-                osc2.stop(now + 0.7);
+                osc1.stop(now + 1.0);
+                osc2.stop(now + 1.0);
+                this.speak("Time is up!");
                 break;
             }
         }
@@ -253,6 +350,13 @@ const BadukClock = {
         const system = this.elements.timeSystem.value;
         document.querySelectorAll('.time-settings').forEach(el => el.classList.add('hidden'));
         document.getElementById(`${system}-settings`).classList.remove('hidden');
+    },
+
+    setTheme(theme) {
+        this.state.theme = theme;
+        document.body.setAttribute('data-theme', theme);
+        this.elements.themeSelect.value = theme;
+        localStorage.setItem('badukClock_theme', theme);
     },
 
     getSettings() {
@@ -356,6 +460,7 @@ const BadukClock = {
         this.showScreen('clock');
         this.updatePauseButton();
 
+        this.elements.clockScreen.classList.remove('game-started');
         this.elements.playerBlack.classList.remove('active', 'warning', 'critical', 'lost');
         this.elements.playerWhite.classList.remove('active', 'warning', 'critical', 'lost');
     },
@@ -405,14 +510,15 @@ const BadukClock = {
     handlePlayerTap(player) {
         if (this.state.gameOver) return;
 
-        this.playSound('click');
-
         if (!this.state.activePlayer) {
+            this.playSound('start');
             this.state.activePlayer = 'black';
             this.state.paused = false;
+            this.elements.clockScreen.classList.add('game-started');
             this.updatePauseButton();
             this.startTimer();
         } else if (this.state.activePlayer === player && !this.state.paused) {
+            this.playSound('click');
             this.switchPlayer();
         }
 
@@ -542,12 +648,13 @@ const BadukClock = {
         if (!player) return;
         
         const element = playerColor === 'black' ? this.elements.playerBlack : this.elements.playerWhite;
-        const otherElement = playerColor === 'black' ? this.elements.playerWhite : this.elements.playerBlack;
         
         let timeToCheck;
+        let isByoyomiOvertime = false;
         switch (this.state.system) {
             case 'byoyomi':
                 timeToCheck = player.inOvertime ? player.currentPeriodTime : player.time;
+                isByoyomiOvertime = player.inOvertime;
                 break;
             case 'canadian':
                 timeToCheck = player.inOvertime ? player.overtimeTime : player.time;
@@ -557,22 +664,34 @@ const BadukClock = {
         }
 
         element.classList.remove('warning', 'critical');
-        otherElement.classList.remove('warning', 'critical');
         
         if (this.state.activePlayer === playerColor) {
-            const currentSecond = Math.ceil(timeToCheck);
+            // Use floor to match the integer part of the display
+            const currentSecond = Math.floor(timeToCheck);
             
-            if (timeToCheck <= 10) {
+            if (timeToCheck <= 10.5) {
                 element.classList.add('critical');
-                if (currentSecond !== this.state.lastWarningSoundSecond && currentSecond > 0) {
+                if (currentSecond !== this.state.lastWarningSoundSecond && currentSecond >= 1) {
                     this.state.lastWarningSoundSecond = currentSecond;
-                    this.playSound('critical');
+
+                    if (isByoyomiOvertime && currentSecond <= 9) {
+                        this.speak(currentSecond.toString());
+                    } else if (currentSecond > 0) {
+                        this.playSound('critical');
+                    }
                 }
-            } else if (timeToCheck <= 20) {
-                element.classList.add('warning');
+            } else if (timeToCheck <= 30.5) {
+                if (timeToCheck <= 20.5) element.classList.add('warning');
+
                 if (currentSecond !== this.state.lastWarningSoundSecond && currentSecond > 0) {
                     this.state.lastWarningSoundSecond = currentSecond;
-                    this.playSound('warning');
+
+                    if (isByoyomiOvertime && (currentSecond === 30 || currentSecond === 20 || currentSecond === 10)) {
+                        const text = currentSecond === 10 ? "10" : currentSecond.toString() + " seconds";
+                        this.speak(text);
+                    } else {
+                        this.playSound('tick');
+                    }
                 }
             } else {
                 this.state.lastWarningSoundSecond = -1;
@@ -607,8 +726,12 @@ const BadukClock = {
         this.state.paused = !this.state.paused;
         
         if (!this.state.paused) {
+            this.playSound('resume');
             this.lastTick = Date.now();
             this.state.lastWarningSoundSecond = -1;
+        } else {
+            this.playSound('pause');
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
         }
         
         this.updatePauseButton();
@@ -630,6 +753,7 @@ const BadukClock = {
 
     resetGame() {
         if (this.timerInterval) clearInterval(this.timerInterval);
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
         
         this.state.gameOver = false;
         this.state.running = false;
@@ -637,6 +761,7 @@ const BadukClock = {
         this.state.activePlayer = null;
         this.state.lastWarningSoundSecond = -1;
 
+        this.elements.clockScreen.classList.remove('game-started');
         this.elements.playerBlack.classList.remove('active', 'warning', 'critical', 'lost');
         this.elements.playerWhite.classList.remove('active', 'warning', 'critical', 'lost');
 
@@ -762,6 +887,11 @@ const BadukClock = {
         if (soundEnabled !== null) {
             this.state.soundEnabled = soundEnabled === 'true';
             this.elements.soundEnabled.checked = this.state.soundEnabled;
+        }
+
+        const savedTheme = localStorage.getItem('badukClock_theme');
+        if (savedTheme) {
+            this.setTheme(savedTheme);
         }
 
         this.renderSavedSettings();
