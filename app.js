@@ -666,27 +666,29 @@ const BadukClock = {
         element.classList.remove('warning', 'critical');
         
         if (this.state.activePlayer === playerColor) {
-            const currentSecond = Math.ceil(timeToCheck);
+            // Use floor to match the integer part of the display
+            const currentSecond = Math.floor(timeToCheck);
             
-            if (timeToCheck <= 10) {
+            if (timeToCheck <= 10.5) {
                 element.classList.add('critical');
-                if (currentSecond !== this.state.lastWarningSoundSecond && currentSecond >= 0) {
+                if (currentSecond !== this.state.lastWarningSoundSecond && currentSecond >= 1) {
                     this.state.lastWarningSoundSecond = currentSecond;
 
-                    if (isByoyomiOvertime && currentSecond <= 10 && currentSecond > 0) {
+                    if (isByoyomiOvertime && currentSecond <= 9) {
                         this.speak(currentSecond.toString());
                     } else if (currentSecond > 0) {
                         this.playSound('critical');
                     }
                 }
-            } else if (timeToCheck <= 30) {
-                if (timeToCheck <= 20) element.classList.add('warning');
+            } else if (timeToCheck <= 30.5) {
+                if (timeToCheck <= 20.5) element.classList.add('warning');
 
                 if (currentSecond !== this.state.lastWarningSoundSecond && currentSecond > 0) {
                     this.state.lastWarningSoundSecond = currentSecond;
 
-                    if (isByoyomiOvertime && (currentSecond === 30 || currentSecond === 20)) {
-                        this.speak(currentSecond.toString() + " seconds");
+                    if (isByoyomiOvertime && (currentSecond === 30 || currentSecond === 20 || currentSecond === 10)) {
+                        const text = currentSecond === 10 ? "10" : currentSecond.toString() + " seconds";
+                        this.speak(text);
                     } else {
                         this.playSound('tick');
                     }
