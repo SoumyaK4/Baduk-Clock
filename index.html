@@ -34,6 +34,8 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
     <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     
     <!-- Goatcounter -->
@@ -68,51 +70,56 @@
     <div id="app">
         <main id="clock-screen" class="screen active" role="main">
             <div id="player-black" class="player-area" data-player="black" role="button" aria-label="Black player clock - tap to switch turns">
-                <div class="player-info">
-                    <span class="player-label">Black</span>
-                    <span class="time-mode-label"></span>
+                <div class="player-content">
+                    <div class="player-label">Black</div>
+                    <div class="time-display">
+                        <span class="main-time">00:00</span>
+                        <span class="tenths-time"></span>
+                    </div>
+                    <div class="status-info-container">
+                        <div class="period-dots" id="dots-black"></div>
+                        <div class="status-info"></div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar"></div>
+                    </div>
+                    <div class="tap-hint">Tap to Begin</div>
                 </div>
-                <div class="time-display">
-                    <span class="main-time">00:00</span>
-                    <span class="period-info"></span>
-                </div>
-                <div class="move-count">Moves: <span>0</span></div>
             </div>
 
             <nav id="control-bar" aria-label="Game controls">
-                <button id="btn-settings" class="control-btn" aria-label="Open settings">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                    </svg>
-                </button>
-                <button id="btn-pause" class="control-btn" aria-label="Pause or resume game">
-                    <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <rect x="6" y="4" width="4" height="16"></rect>
-                        <rect x="14" y="4" width="4" height="16"></rect>
-                    </svg>
-                    <svg class="icon-play hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <polygon points="5,3 19,12 5,21"></polygon>
-                    </svg>
-                </button>
-                <button id="btn-reset" class="control-btn" aria-label="Reset game">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <polyline points="1 4 1 10 7 10"></polyline>
-                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                    </svg>
-                </button>
+                <div class="left-controls">
+                    <button id="btn-reset" class="control-btn" aria-label="Reset game">RESET</button>
+                </div>
+                <div class="center-controls">
+                    <button id="btn-pause" class="control-btn" aria-label="Pause or resume game">PAUSE</button>
+                    <button id="btn-pass" class="control-btn" aria-label="Pass turn">PASS</button>
+                    <div id="move-counter-display" class="move-counter hidden">
+                        <span class="move-label">MOVE</span>
+                        <span class="move-number">0</span>
+                    </div>
+                </div>
+                <div class="right-controls">
+                    <button id="btn-settings" class="control-btn settings-btn" aria-label="Open settings">⚙</button>
+                </div>
             </nav>
 
             <div id="player-white" class="player-area" data-player="white" role="button" aria-label="White player clock - tap to switch turns">
-                <div class="player-info">
-                    <span class="player-label">White</span>
-                    <span class="time-mode-label"></span>
+                <div class="player-content">
+                    <div class="player-label">White</div>
+                    <div class="time-display">
+                        <span class="main-time">00:00</span>
+                        <span class="tenths-time"></span>
+                    </div>
+                    <div class="status-info-container">
+                        <div class="period-dots" id="dots-white"></div>
+                        <div class="status-info"></div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar"></div>
+                    </div>
+                    <div class="tap-hint">Tap to Begin</div>
                 </div>
-                <div class="time-display">
-                    <span class="main-time">00:00</span>
-                    <span class="period-info"></span>
-                </div>
-                <div class="move-count">Moves: <span>0</span></div>
             </div>
         </main>
 
@@ -253,9 +260,29 @@
                 </div>
 
                 <div class="setting-group">
+                    <button id="btn-about-trigger" class="action-btn secondary" style="width: 100%;">About Baduk Clock</button>
+                </div>
+
+                <div class="setting-group">
                     <label for="sound-enabled">Sound Effects</label>
                     <label class="toggle-switch">
                         <input type="checkbox" id="sound-enabled" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-group">
+                    <label for="hold-to-pause">Hold to Pause (1s)</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="hold-to-pause" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-group">
+                    <label for="swipe-to-pass">Swipe to Pass</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="swipe-to-pass" checked>
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
@@ -273,8 +300,7 @@
             </div>
 
             <footer class="settings-footer">
-                <button id="btn-about" class="footer-link" aria-label="About Baduk Clock">About</button><br>
-                <a href="https://soumyak4.in" style="color: orange;">Made by SoumyaK4</a>
+                <a href="https://soumyak4.in" style="color: var(--accent); text-decoration: none; font-size: 14px; font-weight: 600;">Made by SoumyaK4</a>
             </footer>
         </div>
 
@@ -387,14 +413,48 @@
             </article>
         </div>
 
-        <div id="game-over-modal" class="modal hidden" role="dialog" aria-labelledby="game-over-title" aria-modal="true">
-            <div class="modal-content">
-                <h2 id="game-over-title">Time's Up!</h2>
-                <p id="game-over-message"></p>
-                <div class="modal-buttons">
-                    <button id="btn-new-game" class="action-btn">New Game</button>
-                    <button id="btn-close-modal" class="action-btn secondary">Close</button>
+        <!-- End Screen -->
+        <div id="end-screen" class="screen">
+            <div class="end-half end-top" id="end-top">
+                <div class="end-inner">
+                    <div class="end-label" id="end-top-label">Black</div>
+                    <div class="end-title" id="end-top-title">You Win!</div>
+                    <div class="end-sub" id="end-top-sub"></div>
                 </div>
+            </div>
+            <div class="end-divider">
+                <button class="action-btn" id="btn-play-again">Play Again</button>
+                <button class="action-btn secondary" id="btn-see-stats">See Stats</button>
+            </div>
+            <div class="end-half end-bottom" id="end-bottom">
+                <div class="end-inner">
+                    <div class="end-label" id="end-bottom-label">White</div>
+                    <div class="end-title" id="end-bottom-title">Time Out</div>
+                    <div class="end-sub" id="end-bottom-sub"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Double Pass Screen -->
+        <div id="game-over-screen" class="screen">
+            <div class="go-inner">
+                <div class="go-title">Game Over</div>
+                <div class="go-sub">Both players passed</div>
+                <div class="go-btns">
+                    <button class="action-btn" id="btn-go-again">Play Again</button>
+                    <button class="action-btn secondary" id="btn-go-stats">See Stats</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="stats-sheet" class="stats-sheet">
+            <div id="stats-sheet-inner">
+                <div class="sheet-handle"></div>
+                <div class="sheet-title">Game Stats</div>
+                <div id="stats-content" class="sheet-rows">
+                    <!-- Stats rows will be injected here -->
+                </div>
+                <button id="btn-stats-done" class="sheet-close">Done</button>
             </div>
         </div>
 

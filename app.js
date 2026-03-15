@@ -6,13 +6,24 @@ const BadukClock = {
         activePlayer: null,
         gameOver: false,
         soundEnabled: true,
+        holdToPause: true,
+        swipeToPass: true,
         theme: 'midnight',
         settings: {},
         players: {
             black: null,
             white: null
         },
-    lastWarningSoundSecond: -1,
+        passed: {
+            black: false,
+            white: false
+        },
+        stats: {
+            startTime: null,
+            blackTimeUsed: 0,
+            whiteTimeUsed: 0
+        },
+        lastWarningSoundSecond: -1,
         utterance: null
     },
 
@@ -39,23 +50,35 @@ const BadukClock = {
             aboutScreen: document.getElementById('about-screen'),
             playerBlack: document.getElementById('player-black'),
             playerWhite: document.getElementById('player-white'),
+            dotsBlack: document.getElementById('dots-black'),
+            dotsWhite: document.getElementById('dots-white'),
             btnSettings: document.getElementById('btn-settings'),
             btnPause: document.getElementById('btn-pause'),
             btnReset: document.getElementById('btn-reset'),
+            btnPass: document.getElementById('btn-pass'),
             btnBack: document.getElementById('btn-back'),
-            btnAbout: document.getElementById('btn-about'),
+            btnAbout: document.getElementById('btn-about-trigger'),
             btnAboutBack: document.getElementById('btn-about-back'),
             btnStartGame: document.getElementById('btn-start-game'),
             timeSystem: document.getElementById('time-system'),
             soundEnabled: document.getElementById('sound-enabled'),
-            gameOverModal: document.getElementById('game-over-modal'),
-            gameOverMessage: document.getElementById('game-over-message'),
-            btnNewGame: document.getElementById('btn-new-game'),
-            btnCloseModal: document.getElementById('btn-close-modal'),
+            endScreen: document.getElementById('end-screen'),
+            endTop: document.getElementById('end-top'),
+            endBottom: document.getElementById('end-bottom'),
+            btnPlayAgain: document.getElementById('btn-play-again'),
+            btnSeeStats: document.getElementById('btn-see-stats'),
+            gameOverScreen: document.getElementById('game-over-screen'),
+            btnGOAgain: document.getElementById('btn-go-again'),
+            btnGOStats: document.getElementById('btn-go-stats'),
+            statsSheet: document.getElementById('stats-sheet'),
+            statsContent: document.getElementById('stats-content'),
+            btnStatsDone: document.getElementById('btn-stats-done'),
             themeSelect: document.getElementById('theme-select'),
             settingName: document.getElementById('setting-name'),
             btnSaveSetting: document.getElementById('btn-save-setting'),
             savedSettingsList: document.getElementById('saved-settings-list'),
+            holdToPause: document.getElementById('hold-to-pause'),
+            swipeToPass: document.getElementById('swipe-to-pass'),
             installPrompt: document.getElementById('install-prompt'),
             btnInstall: document.getElementById('btn-install'),
             btnDismissInstall: document.getElementById('btn-dismiss-install')
@@ -63,12 +86,17 @@ const BadukClock = {
     },
 
     bindEvents() {
-        this.elements.playerBlack.addEventListener('click', () => this.handlePlayerTap('black'));
-        this.elements.playerWhite.addEventListener('click', () => this.handlePlayerTap('white'));
+        this.setupPlayerEvents('black');
+        this.setupPlayerEvents('white');
         
         this.elements.btnSettings.addEventListener('click', () => this.showScreen('settings'));
         this.elements.btnPause.addEventListener('click', () => this.togglePause());
         this.elements.btnReset.addEventListener('click', () => this.resetGame());
+        this.elements.btnPass.addEventListener('click', () => {
+            if (this.state.activePlayer) {
+                this.handlePass(this.state.activePlayer);
+            }
+        });
         
         this.elements.btnBack.addEventListener('click', () => this.showScreen('clock'));
         this.elements.btnStartGame.addEventListener('click', () => this.startGame());
@@ -84,12 +112,21 @@ const BadukClock = {
             this.state.soundEnabled = e.target.checked;
             localStorage.setItem('badukClock_soundEnabled', this.state.soundEnabled);
         });
-        
-        this.elements.btnNewGame.addEventListener('click', () => {
-            this.hideModal();
-            this.showScreen('settings');
+        this.elements.holdToPause.addEventListener('change', (e) => {
+            this.state.holdToPause = e.target.checked;
+            localStorage.setItem('badukClock_holdToPause', this.state.holdToPause);
         });
-        this.elements.btnCloseModal.addEventListener('click', () => this.hideModal());
+        this.elements.swipeToPass.addEventListener('change', (e) => {
+            this.state.swipeToPass = e.target.checked;
+            localStorage.setItem('badukClock_swipeToPass', this.state.swipeToPass);
+        });
+
+        this.elements.btnPlayAgain.addEventListener('click', () => this.resetGame());
+        this.elements.btnGOAgain.addEventListener('click', () => this.resetGame());
+
+        this.elements.btnSeeStats.addEventListener('click', () => this.showStats());
+        this.elements.btnGOStats.addEventListener('click', () => this.showStats());
+        this.elements.btnStatsDone.addEventListener('click', () => this.hideStats());
         
         this.elements.btnSaveSetting.addEventListener('click', () => this.saveCurrentSetting());
         
@@ -328,10 +365,18 @@ const BadukClock = {
         this.elements.clockScreen.classList.remove('active');
         this.elements.settingsScreen.classList.remove('active');
         this.elements.aboutScreen.classList.remove('active');
+        this.elements.endScreen.classList.remove('active');
+        this.elements.gameOverScreen.classList.remove('active');
         
         switch (screen) {
             case 'clock':
                 this.elements.clockScreen.classList.add('active');
+                break;
+            case 'end':
+                this.elements.endScreen.classList.add('active');
+                break;
+            case 'game-over':
+                this.elements.gameOverScreen.classList.add('active');
                 break;
             case 'settings':
                 this.elements.settingsScreen.classList.add('active');
@@ -446,6 +491,131 @@ const BadukClock = {
         document.getElementById(secondsId).value = seconds;
     },
 
+    setupPlayerEvents(playerColor) {
+        const element = playerColor === 'black' ? this.elements.playerBlack : this.elements.playerWhite;
+
+        let touchStartY = 0;
+        let holdTimer = null;
+        let holdFired = false;
+        let suppressClick = false;
+
+        element.addEventListener('touchstart', (e) => {
+            if (this.state.gameOver) return;
+            touchStartY = e.touches[0].clientY;
+            holdFired = false;
+            suppressClick = false;
+
+            if (this.state.holdToPause && this.state.running && !this.state.paused && this.state.activePlayer === playerColor) {
+                this.addHoldRing(element);
+                holdTimer = setTimeout(() => {
+                    this.togglePause();
+                    holdFired = true;
+                    suppressClick = true;
+                    this.removeHoldRing(element);
+                }, 1000);
+            }
+        }, { passive: true });
+
+        element.addEventListener('touchend', (e) => {
+            if (this.state.gameOver) return;
+            if (holdTimer) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+            }
+            this.removeHoldRing(element);
+
+            if (holdFired) {
+                holdFired = false;
+                return;
+            }
+
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaY = touchEndY - touchStartY;
+
+            // Swipe detection
+            if (this.state.swipeToPass && this.state.running && !this.state.paused && this.state.activePlayer === playerColor) {
+                const isBlackSwipe = playerColor === 'black' && deltaY > 60;
+                const isWhiteSwipe = playerColor === 'white' && deltaY < -60;
+
+                if (isBlackSwipe || isWhiteSwipe) {
+                    this.handlePass(playerColor);
+                    suppressClick = true;
+                    return;
+                }
+            }
+
+            if (Math.abs(deltaY) > 30) {
+                suppressClick = true;
+            } else {
+                // If it's a real tap, we let the 'click' event handle it to avoid double triggers
+                // unless it's a touch device where click might be delayed.
+                // But most modern browsers handle this okay.
+                // To be safe, we'll trigger it here and suppress the subsequent click.
+                this.handlePlayerTap(playerColor);
+                suppressClick = true;
+            }
+        }, { passive: true });
+
+        element.addEventListener('mousedown', (e) => {
+            if (this.state.gameOver || e.button !== 0) return;
+            holdFired = false;
+            suppressClick = false;
+            if (this.state.holdToPause && this.state.running && !this.state.paused && this.state.activePlayer === playerColor) {
+                this.addHoldRing(element);
+                holdTimer = setTimeout(() => {
+                    this.togglePause();
+                    holdFired = true;
+                    suppressClick = true;
+                    this.removeHoldRing(element);
+                }, 1000);
+            }
+        });
+
+        element.addEventListener('mouseup', () => {
+            if (this.state.gameOver) return;
+            if (holdTimer) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+            }
+            this.removeHoldRing(element);
+            if (holdFired) {
+                holdFired = false;
+                suppressClick = true;
+                return;
+            }
+        });
+
+        element.addEventListener('click', (e) => {
+            if (suppressClick) {
+                e.preventDefault();
+                e.stopPropagation();
+                suppressClick = false;
+                return;
+            }
+            this.handlePlayerTap(playerColor);
+        });
+
+        element.addEventListener('mouseleave', () => {
+            if (holdTimer) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+            }
+            this.removeHoldRing(element);
+        });
+    },
+
+    addHoldRing(element) {
+        this.removeHoldRing(element);
+        const ring = document.createElement('div');
+        ring.className = 'hold-ring';
+        element.appendChild(ring);
+    },
+
+    removeHoldRing(element) {
+        const ring = element.querySelector('.hold-ring');
+        if (ring) ring.remove();
+    },
+
     startGame() {
         const settings = this.getSettings();
         this.state.settings = settings;
@@ -455,14 +625,25 @@ const BadukClock = {
         this.state.paused = true;
         this.state.activePlayer = null;
 
+        this.state.passed = {
+            black: false,
+            white: false
+        };
+
+        this.state.stats = {
+            startTime: Date.now(),
+            blackTimeUsed: 0,
+            whiteTimeUsed: 0
+        };
+
         this.initializePlayers(settings);
         this.updateAllDisplays();
         this.showScreen('clock');
         this.updatePauseButton();
 
         this.elements.clockScreen.classList.remove('game-started');
-        this.elements.playerBlack.classList.remove('active', 'warning', 'critical', 'lost');
-        this.elements.playerWhite.classList.remove('active', 'warning', 'critical', 'lost');
+        this.elements.playerBlack.classList.remove('active', 'off', 'warning', 'critical', 'lost');
+        this.elements.playerWhite.classList.remove('active', 'off', 'warning', 'critical', 'lost');
     },
 
     initializePlayers(settings) {
@@ -515,11 +696,14 @@ const BadukClock = {
             this.state.activePlayer = 'black';
             this.state.paused = false;
             this.elements.clockScreen.classList.add('game-started');
-            this.updatePauseButton();
+            this.lastTick = Date.now();
             this.startTimer();
+            this.updateAllDisplays();
         } else if (this.state.activePlayer === player && !this.state.paused) {
             this.playSound('click');
             this.switchPlayer();
+        } else if (this.state.paused && this.state.running) {
+            this.togglePause();
         }
 
         this.updateActivePlayerDisplay();
@@ -528,6 +712,10 @@ const BadukClock = {
     switchPlayer() {
         const currentPlayer = this.state.players[this.state.activePlayer];
         currentPlayer.moves++;
+
+        this.state.passed[this.state.activePlayer] = false;
+
+        this.lastTick = Date.now();
 
         switch (this.state.system) {
             case 'fischer':
@@ -576,6 +764,13 @@ const BadukClock = {
         const now = Date.now();
         const elapsed = (now - this.lastTick) / 1000;
         this.lastTick = now;
+
+        // Cumulative stats update
+        if (this.state.activePlayer === 'black') {
+            this.state.stats.blackTimeUsed += elapsed;
+        } else if (this.state.activePlayer === 'white') {
+            this.state.stats.whiteTimeUsed += elapsed;
+        }
 
         switch (this.state.system) {
             case 'absolute':
@@ -704,20 +899,71 @@ const BadukClock = {
         this.state.running = false;
         if (this.timerInterval) clearInterval(this.timerInterval);
 
-        const winner = loser === 'black' ? 'White' : 'Black';
-        const loserElement = loser === 'black' ? this.elements.playerBlack : this.elements.playerWhite;
-        
-        loserElement.classList.add('lost');
-        loserElement.classList.remove('warning', 'critical');
+        const winnerColor = loser === 'black' ? 'white' : 'black';
 
-        this.elements.gameOverMessage.textContent = `${winner} wins on time!`;
-        this.elements.gameOverModal.classList.remove('hidden');
-
+        this.showEnd(winnerColor);
         this.playSound('gameover');
     },
 
-    hideModal() {
-        this.elements.gameOverModal.classList.add('hidden');
+    handlePass(playerColor) {
+        if (this.state.gameOver || this.state.paused || this.state.activePlayer !== playerColor) return;
+
+        this.playSound('click');
+
+        this.state.players[playerColor].moves++;
+        this.state.passed[playerColor] = true;
+
+        if (this.state.passed.black && this.state.passed.white) {
+            this.gameOverByPass();
+            return;
+        }
+
+        this.state.activePlayer = this.state.activePlayer === 'black' ? 'white' : 'black';
+        this.state.lastWarningSoundSecond = -1;
+        this.updateAllDisplays();
+    },
+
+    gameOverByPass() {
+        this.state.gameOver = true;
+        this.state.running = false;
+        if (this.timerInterval) clearInterval(this.timerInterval);
+
+        this.showScreen('game-over');
+        this.playSound('gameover');
+    },
+
+    showEnd(winnerColor) {
+        const loserColor = winnerColor === 'black' ? 'white' : 'black';
+
+        const eTop = this.elements.endTop;
+        const eBottom = this.elements.endBottom;
+
+        eTop.className = 'end-half end-top ' + (winnerColor === 'black' ? 'winner' : 'loser');
+        eBottom.className = 'end-half end-bottom ' + (winnerColor === 'white' ? 'winner' : 'loser');
+
+        const topLabel = document.getElementById('end-top-label');
+        const topTitle = document.getElementById('end-top-title');
+        const topSub = document.getElementById('end-top-sub');
+        const bottomLabel = document.getElementById('end-bottom-label');
+        const bottomTitle = document.getElementById('end-bottom-title');
+        const bottomSub = document.getElementById('end-bottom-sub');
+
+        topLabel.textContent = 'Black';
+        bottomLabel.textContent = 'White';
+
+        if (winnerColor === 'black') {
+            topTitle.textContent = 'You Win!';
+            topSub.textContent = 'Well played, Black!';
+            bottomTitle.textContent = 'Time Out';
+            bottomSub.textContent = 'Black wins on time';
+        } else {
+            bottomTitle.textContent = 'You Win!';
+            bottomSub.textContent = 'Well played, White!';
+            topTitle.textContent = 'Time Out';
+            topSub.textContent = 'White wins on time';
+        }
+
+        this.showScreen('end');
     },
 
     togglePause() {
@@ -734,21 +980,68 @@ const BadukClock = {
             if (window.speechSynthesis) window.speechSynthesis.cancel();
         }
         
-        this.updatePauseButton();
-        this.updateActivePlayerDisplay();
+        this.updateAllDisplays();
     },
 
     updatePauseButton() {
-        const pauseIcon = this.elements.btnPause.querySelector('.icon-pause');
-        const playIcon = this.elements.btnPause.querySelector('.icon-play');
-        
         if (this.state.paused) {
-            pauseIcon.classList.add('hidden');
-            playIcon.classList.remove('hidden');
+            this.elements.btnPause.textContent = 'RESUME';
         } else {
-            pauseIcon.classList.remove('hidden');
-            playIcon.classList.add('hidden');
+            this.elements.btnPause.textContent = 'PAUSE';
         }
+
+        if (this.state.running && !this.state.paused && this.state.activePlayer) {
+            this.elements.btnPass.classList.remove('hidden');
+            this.elements.btnPause.classList.remove('hidden');
+        } else if (this.state.running && this.state.paused) {
+            this.elements.btnPass.classList.add('hidden');
+            this.elements.btnPause.classList.remove('hidden');
+        } else {
+            this.elements.btnPass.classList.add('hidden');
+            this.elements.btnPause.classList.add('hidden');
+        }
+    },
+
+    showStats() {
+        this.buildStats();
+        this.elements.statsSheet.classList.add('active');
+    },
+
+    hideStats() {
+        this.elements.statsSheet.classList.remove('active');
+    },
+
+    buildStats() {
+        const stats = this.state.stats;
+        const players = this.state.players;
+        const totalGameTime = (Date.now() - stats.startTime) / 1000;
+
+        const blackAvg = players.black.moves > 0 ? stats.blackTimeUsed / players.black.moves : 0;
+        const whiteAvg = players.white.moves > 0 ? stats.whiteTimeUsed / players.white.moves : 0;
+
+        const formatDur = (sec) => {
+            const s = Math.round(sec);
+            const m = Math.floor(s / 60);
+            const rs = s % 60;
+            if (m > 0) return `${m}m ${rs}s`;
+            return `${rs}s`;
+        };
+
+        const rows = [
+            { label: 'Total Game Time', value: formatDur(totalGameTime) },
+            { label: 'Total Moves', value: players.black.moves + players.white.moves },
+            { label: 'Black - Moves', value: players.black.moves },
+            { label: 'Black - Avg / Move', value: formatDur(blackAvg), accent: true },
+            { label: 'White - Moves', value: players.white.moves },
+            { label: 'White - Avg / Move', value: formatDur(whiteAvg), accent: true }
+        ];
+
+        this.elements.statsContent.innerHTML = rows.map(row => `
+            <div class="sheet-row">
+                <span class="sheet-row-label">${row.label}</span>
+                <span class="sheet-row-value ${row.accent ? 'accent' : ''}">${row.value}</span>
+            </div>
+        `).join('');
     },
 
     resetGame() {
@@ -762,15 +1055,13 @@ const BadukClock = {
         this.state.lastWarningSoundSecond = -1;
 
         this.elements.clockScreen.classList.remove('game-started');
-        this.elements.playerBlack.classList.remove('active', 'warning', 'critical', 'lost');
-        this.elements.playerWhite.classList.remove('active', 'warning', 'critical', 'lost');
 
         if (this.state.settings.system) {
             this.initializePlayers(this.state.settings);
-            this.updateAllDisplays();
         }
 
-        this.updatePauseButton();
+        this.updateAllDisplays();
+        this.showScreen('clock');
     },
 
     updateActivePlayerDisplay() {
@@ -795,52 +1086,110 @@ const BadukClock = {
         const element = playerColor === 'black' ? this.elements.playerBlack : this.elements.playerWhite;
         
         const mainTimeEl = element.querySelector('.main-time');
-        const periodInfoEl = element.querySelector('.period-info');
-        const timeModeEl = element.querySelector('.time-mode-label');
-        const moveCountEl = element.querySelector('.move-count span');
+        const tenthsEl = element.querySelector('.tenths-time');
+        const statusInfoEl = element.querySelector('.status-info');
+        const progressBar = element.querySelector('.progress-bar');
+        const tapHint = element.querySelector('.tap-hint');
 
-        moveCountEl.textContent = player.moves;
+        // Update active/off/paused classes
+        if (this.state.activePlayer) {
+            if (this.state.activePlayer === playerColor) {
+                element.classList.add('active');
+                element.classList.remove('off');
+                if (this.state.paused) element.classList.add('paused');
+                else element.classList.remove('paused');
+            } else {
+                element.classList.remove('active', 'paused');
+                element.classList.add('off');
+            }
+            tapHint.classList.add('hidden');
+        } else {
+            element.classList.remove('active', 'paused', 'off');
+            tapHint.classList.remove('hidden');
+        }
+
+        // Move counter display update
+        const moveCounter = document.getElementById('move-counter-display');
+        if (moveCounter) {
+            const moveNumber = moveCounter.querySelector('.move-number');
+            if (this.state.activePlayer) {
+                moveCounter.classList.remove('hidden');
+                moveNumber.textContent = this.state.players.black.moves + this.state.players.white.moves;
+            } else {
+                moveCounter.classList.add('hidden');
+            }
+        }
+
+        this.updatePauseButton();
+
+        let timeToShow = 0;
+        let progress = 0;
+
+        if (!player) return;
 
         switch (this.state.system) {
             case 'absolute':
-                timeModeEl.textContent = 'Absolute';
-                mainTimeEl.textContent = this.formatTime(player.time);
-                periodInfoEl.textContent = '';
+                timeToShow = player.time;
+                statusInfoEl.textContent = 'Absolute';
                 break;
 
             case 'byoyomi':
-                timeModeEl.textContent = 'Byo-yomi';
                 if (!player.inOvertime) {
-                    mainTimeEl.textContent = this.formatTime(player.time);
-                    periodInfoEl.textContent = `${player.periods} periods`;
+                    timeToShow = player.time;
+                    statusInfoEl.textContent = `${player.periods} periods left`;
+                    this.updateDots(playerColor, player.periods, this.state.settings.byoyomi.periods, false);
                 } else {
-                    mainTimeEl.textContent = this.formatTime(player.currentPeriodTime);
-                    periodInfoEl.textContent = `Period ${this.state.settings.byoyomi.periods - player.periods + 1}/${this.state.settings.byoyomi.periods}`;
+                    timeToShow = player.currentPeriodTime;
+                    statusInfoEl.textContent = `Period ${this.state.settings.byoyomi.periods - player.periods + 1} of ${this.state.settings.byoyomi.periods}`;
+                    progress = (player.currentPeriodTime / player.periodTime) * 100;
+                    this.updateDots(playerColor, player.periods, this.state.settings.byoyomi.periods, true);
                 }
                 break;
 
             case 'fischer':
-                timeModeEl.textContent = 'Fischer';
-                mainTimeEl.textContent = this.formatTime(player.time);
-                periodInfoEl.textContent = `+${this.formatTime(player.increment)}/move`;
+                timeToShow = player.time;
+                statusInfoEl.textContent = `+${player.increment}s / move`;
                 break;
 
             case 'canadian':
-                timeModeEl.textContent = 'Canadian';
                 if (!player.inOvertime) {
-                    mainTimeEl.textContent = this.formatTime(player.time);
-                    periodInfoEl.textContent = '';
+                    timeToShow = player.time;
+                    statusInfoEl.textContent = `${player.stones} stones / period`;
                 } else {
-                    mainTimeEl.textContent = this.formatTime(player.overtimeTime);
-                    periodInfoEl.textContent = `${player.stonesRemaining}/${player.stones} stones`;
+                    timeToShow = player.overtimeTime;
+                    statusInfoEl.textContent = `${player.stonesRemaining} stones left`;
+                    progress = (player.overtimeTime / player.periodTime) * 100;
                 }
                 break;
 
             case 'simple':
-                timeModeEl.textContent = 'Simple';
-                mainTimeEl.textContent = this.formatTime(player.time);
-                periodInfoEl.textContent = 'per move';
+                timeToShow = player.time;
+                statusInfoEl.textContent = 'Simple';
+                progress = (player.time / (player.timePerMove || 30)) * 100;
                 break;
+        }
+
+        const formatted = this.formatTime(timeToShow);
+        mainTimeEl.textContent = formatted.main;
+        tenthsEl.textContent = formatted.tenths;
+        progressBar.style.width = `${progress}%`;
+
+    },
+
+    updateDots(playerColor, remaining, total, inByoyomi) {
+        const dotsContainer = playerColor === 'black' ? this.elements.dotsBlack : this.elements.dotsWhite;
+        dotsContainer.innerHTML = '';
+        const displayCount = Math.min(total, 5);
+        for (let i = 0; i < displayCount; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            if (remaining > i) {
+                dot.classList.add('active');
+                if (inByoyomi && i === remaining - 1) {
+                    dot.classList.add('current');
+                }
+            }
+            dotsContainer.appendChild(dot);
         }
     },
 
@@ -852,13 +1201,19 @@ const BadukClock = {
         const secs = Math.floor(seconds % 60);
         const tenths = Math.floor((seconds * 10) % 10);
 
+        let mainStr;
+        let tenthsStr = '';
+
         if (hrs > 0) {
-            return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        } else if (seconds < 10) {
-            return `${mins}:${secs.toString().padStart(2, '0')}.${tenths}`;
+            mainStr = `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         } else {
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
+            mainStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+            if (seconds < 10) {
+                tenthsStr = `.${tenths}`;
+            }
         }
+
+        return { main: mainStr, tenths: tenthsStr };
     },
 
     saveCurrentSetting() {
@@ -887,6 +1242,18 @@ const BadukClock = {
         if (soundEnabled !== null) {
             this.state.soundEnabled = soundEnabled === 'true';
             this.elements.soundEnabled.checked = this.state.soundEnabled;
+        }
+
+        const holdToPause = localStorage.getItem('badukClock_holdToPause');
+        if (holdToPause !== null) {
+            this.state.holdToPause = holdToPause === 'true';
+            this.elements.holdToPause.checked = this.state.holdToPause;
+        }
+
+        const swipeToPass = localStorage.getItem('badukClock_swipeToPass');
+        if (swipeToPass !== null) {
+            this.state.swipeToPass = swipeToPass === 'true';
+            this.elements.swipeToPass.checked = this.state.swipeToPass;
         }
 
         const savedTheme = localStorage.getItem('badukClock_theme');
@@ -935,17 +1302,18 @@ const BadukClock = {
     },
 
     getSettingDescription(setting) {
+        const formatMain = (sec) => this.formatTime(sec).main;
         switch (setting.system) {
             case 'absolute':
-                return `Absolute: ${this.formatTime(setting.absolute.totalTime)}`;
+                return `Absolute: ${formatMain(setting.absolute.totalTime)}`;
             case 'byoyomi':
-                return `Byo-yomi: ${this.formatTime(setting.byoyomi.mainTime)} + ${setting.byoyomi.periods}x${this.formatTime(setting.byoyomi.periodTime)}`;
+                return `Byo-yomi: ${formatMain(setting.byoyomi.mainTime)} + ${setting.byoyomi.periods}x${formatMain(setting.byoyomi.periodTime)}`;
             case 'fischer':
-                return `Fischer: ${this.formatTime(setting.fischer.initialTime)} +${this.formatTime(setting.fischer.increment)}`;
+                return `Fischer: ${formatMain(setting.fischer.initialTime)} +${formatMain(setting.fischer.increment)}`;
             case 'canadian':
-                return `Canadian: ${this.formatTime(setting.canadian.mainTime)} + ${this.formatTime(setting.canadian.periodTime)}/${setting.canadian.stones}`;
+                return `Canadian: ${formatMain(setting.canadian.mainTime)} + ${formatMain(setting.canadian.periodTime)}/${setting.canadian.stones}`;
             case 'simple':
-                return `Simple: ${this.formatTime(setting.simple.timePerMove)}/move`;
+                return `Simple: ${formatMain(setting.simple.timePerMove)}/move`;
             default:
                 return setting.system;
         }
@@ -962,4 +1330,6 @@ const BadukClock = {
     }
 };
 
+// Expose to window for testing/gestures
+window.BadukClock = BadukClock;
 document.addEventListener('DOMContentLoaded', () => BadukClock.init());
