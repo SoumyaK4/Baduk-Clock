@@ -222,21 +222,28 @@ html, body {
     min-width: 2ch;
 }
 
+.status-info-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 20px;
+}
+
 .status-info {
     font-family: 'DM Mono', monospace;
     font-size: clamp(11px, 2.4vw, 13px);
     letter-spacing: 0.05em;
     opacity: 0.5;
-    min-height: 1.5em;
     text-align: center;
 }
 
 /* Progress and Dots */
 .period-dots {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
-    min-height: 10px;
+    align-items: center;
 }
 
 .dot {
@@ -291,47 +298,62 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 16px;
+    padding: 0 12px;
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
     z-index: 100;
+    position: relative;
+}
+
+.left-controls, .right-controls {
+    display: flex;
+    align-items: center;
+    z-index: 10;
 }
 
 .center-controls {
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    gap: 8px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: auto;
 }
 
 .control-btn {
     background: transparent;
     border: 1px solid var(--border-strong);
     color: var(--fg);
-    height: 40px;
-    padding: 0 16px;
+    height: 38px;
+    padding: 0 18px;
     border-radius: 20px;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.18s;
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0.7;
+    opacity: 0.6;
 }
 
 .control-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.93);
     background: var(--border);
     opacity: 1;
 }
 
-#btn-settings {
-    width: 40px;
+.settings-btn {
+    width: 38px;
+    height: 38px;
     padding: 0;
     border-radius: 50%;
+    font-size: 16px;
 }
 
 .control-btn svg {
@@ -347,6 +369,12 @@ html, body {
 #btn-reset {
     color: var(--red);
     border-color: rgba(224, 90, 78, 0.3);
+    font-size: 10px;
+}
+
+#btn-pass {
+    color: var(--accent);
+    border-color: rgba(200, 169, 110, 0.3);
 }
 
 .move-counter {
@@ -646,9 +674,31 @@ html, body {
     overflow: visible;
 }
 
-#btn-play-again, #btn-see-stats {
-    background: var(--bg);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+#btn-play-again, #btn-see-stats, #btn-go-again, #btn-go-stats, .action-btn {
+    background: #141414;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #f5f0e8;
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#btn-play-again:active, #btn-see-stats:active, #btn-go-again:active, #btn-go-stats:active, .action-btn:active {
+    transform: scale(0.95);
+    background: var(--border);
+}
+
+.action-btn.secondary {
+    opacity: 0.6;
 }
 
 .end-label {

@@ -76,8 +76,10 @@
                         <span class="main-time">00:00</span>
                         <span class="tenths-time"></span>
                     </div>
-                    <div class="period-dots" id="dots-black"></div>
-                    <div class="status-info"></div>
+                    <div class="status-info-container">
+                        <div class="period-dots" id="dots-black"></div>
+                        <div class="status-info"></div>
+                    </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar"></div>
                     </div>
@@ -86,32 +88,19 @@
             </div>
 
             <nav id="control-bar" aria-label="Game controls">
-                <button id="btn-settings" class="control-btn" aria-label="Open settings">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                    </svg>
-                </button>
+                <div class="left-controls">
+                    <button id="btn-reset" class="control-btn" aria-label="Reset game">RESET</button>
+                </div>
                 <div class="center-controls">
-                    <button id="btn-reset" class="control-btn" aria-label="Reset game">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <polyline points="1 4 1 10 7 10"></polyline>
-                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                        </svg>
-                    </button>
-                    <button id="btn-pause" class="control-btn" aria-label="Pause or resume game">
-                        <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                            <rect x="6" y="4" width="4" height="16"></rect>
-                            <rect x="14" y="4" width="4" height="16"></rect>
-                        </svg>
-                        <svg class="icon-play hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                            <polygon points="5,3 19,12 5,21"></polygon>
-                        </svg>
-                    </button>
+                    <button id="btn-pause" class="control-btn" aria-label="Pause or resume game">PAUSE</button>
+                    <button id="btn-pass" class="control-btn" aria-label="Pass turn">PASS</button>
                     <div id="move-counter-display" class="move-counter hidden">
                         <span class="move-label">MOVE</span>
                         <span class="move-number">0</span>
                     </div>
+                </div>
+                <div class="right-controls">
+                    <button id="btn-settings" class="control-btn settings-btn" aria-label="Open settings">⚙</button>
                 </div>
             </nav>
 
@@ -122,8 +111,10 @@
                         <span class="main-time">00:00</span>
                         <span class="tenths-time"></span>
                     </div>
-                    <div class="period-dots" id="dots-white"></div>
-                    <div class="status-info"></div>
+                    <div class="status-info-container">
+                        <div class="period-dots" id="dots-white"></div>
+                        <div class="status-info"></div>
+                    </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar"></div>
                     </div>

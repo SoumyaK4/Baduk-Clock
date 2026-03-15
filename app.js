@@ -55,6 +55,7 @@ const BadukClock = {
             btnSettings: document.getElementById('btn-settings'),
             btnPause: document.getElementById('btn-pause'),
             btnReset: document.getElementById('btn-reset'),
+            btnPass: document.getElementById('btn-pass'),
             btnBack: document.getElementById('btn-back'),
             btnAbout: document.getElementById('btn-about-trigger'),
             btnAboutBack: document.getElementById('btn-about-back'),
@@ -91,6 +92,11 @@ const BadukClock = {
         this.elements.btnSettings.addEventListener('click', () => this.showScreen('settings'));
         this.elements.btnPause.addEventListener('click', () => this.togglePause());
         this.elements.btnReset.addEventListener('click', () => this.resetGame());
+        this.elements.btnPass.addEventListener('click', () => {
+            if (this.state.activePlayer) {
+                this.handlePass(this.state.activePlayer);
+            }
+        });
         
         this.elements.btnBack.addEventListener('click', () => this.showScreen('clock'));
         this.elements.btnStartGame.addEventListener('click', () => this.startGame());
@@ -491,17 +497,20 @@ const BadukClock = {
         let touchStartY = 0;
         let holdTimer = null;
         let holdFired = false;
+        let suppressClick = false;
 
         element.addEventListener('touchstart', (e) => {
             if (this.state.gameOver) return;
             touchStartY = e.touches[0].clientY;
             holdFired = false;
+            suppressClick = false;
 
             if (this.state.holdToPause && this.state.running && !this.state.paused && this.state.activePlayer === playerColor) {
                 this.addHoldRing(element);
                 holdTimer = setTimeout(() => {
                     this.togglePause();
                     holdFired = true;
+                    suppressClick = true;
                     this.removeHoldRing(element);
                 }, 1000);
             }
@@ -515,7 +524,10 @@ const BadukClock = {
             }
             this.removeHoldRing(element);
 
-            if (holdFired) return;
+            if (holdFired) {
+                holdFired = false;
+                return;
+            }
 
             const touchEndY = e.changedTouches[0].clientY;
             const deltaY = touchEndY - touchStartY;
@@ -527,20 +539,33 @@ const BadukClock = {
 
                 if (isBlackSwipe || isWhiteSwipe) {
                     this.handlePass(playerColor);
+                    suppressClick = true;
                     return;
                 }
             }
 
-            this.handlePlayerTap(playerColor);
+            if (Math.abs(deltaY) > 30) {
+                suppressClick = true;
+            } else {
+                // If it's a real tap, we let the 'click' event handle it to avoid double triggers
+                // unless it's a touch device where click might be delayed.
+                // But most modern browsers handle this okay.
+                // To be safe, we'll trigger it here and suppress the subsequent click.
+                this.handlePlayerTap(playerColor);
+                suppressClick = true;
+            }
         }, { passive: true });
 
-        element.addEventListener('mousedown', () => {
-            if (this.state.gameOver) return;
+        element.addEventListener('mousedown', (e) => {
+            if (this.state.gameOver || e.button !== 0) return;
+            holdFired = false;
+            suppressClick = false;
             if (this.state.holdToPause && this.state.running && !this.state.paused && this.state.activePlayer === playerColor) {
                 this.addHoldRing(element);
                 holdTimer = setTimeout(() => {
                     this.togglePause();
                     holdFired = true;
+                    suppressClick = true;
                     this.removeHoldRing(element);
                 }, 1000);
             }
@@ -555,6 +580,16 @@ const BadukClock = {
             this.removeHoldRing(element);
             if (holdFired) {
                 holdFired = false;
+                suppressClick = true;
+                return;
+            }
+        });
+
+        element.addEventListener('click', (e) => {
+            if (suppressClick) {
+                e.preventDefault();
+                e.stopPropagation();
+                suppressClick = false;
                 return;
             }
             this.handlePlayerTap(playerColor);
@@ -655,18 +690,20 @@ const BadukClock = {
 
     handlePlayerTap(player) {
         if (this.state.gameOver) return;
-        if (this.state.paused && this.state.activePlayer) return;
 
         if (!this.state.activePlayer) {
             this.playSound('start');
             this.state.activePlayer = 'black';
             this.state.paused = false;
             this.elements.clockScreen.classList.add('game-started');
-            this.updatePauseButton();
+            this.lastTick = Date.now();
             this.startTimer();
+            this.updateAllDisplays();
         } else if (this.state.activePlayer === player && !this.state.paused) {
             this.playSound('click');
             this.switchPlayer();
+        } else if (this.state.paused && this.state.running) {
+            this.togglePause();
         }
 
         this.updateActivePlayerDisplay();
@@ -678,15 +715,7 @@ const BadukClock = {
 
         this.state.passed[this.state.activePlayer] = false;
 
-        // Add to time used stats
-        const now = Date.now();
-        const turnTime = (now - this.lastTick) / 1000;
-        if (this.state.activePlayer === 'black') {
-            this.state.stats.blackTimeUsed += turnTime;
-        } else {
-            this.state.stats.whiteTimeUsed += turnTime;
-        }
-        this.lastTick = now;
+        this.lastTick = Date.now();
 
         switch (this.state.system) {
             case 'fischer':
@@ -739,7 +768,7 @@ const BadukClock = {
         // Cumulative stats update
         if (this.state.activePlayer === 'black') {
             this.state.stats.blackTimeUsed += elapsed;
-        } else {
+        } else if (this.state.activePlayer === 'white') {
             this.state.stats.whiteTimeUsed += elapsed;
         }
 
@@ -881,19 +910,9 @@ const BadukClock = {
 
         this.playSound('click');
 
-        // Add to time used stats
-        const now = Date.now();
-        const turnTime = (now - this.lastTick) / 1000;
-        if (playerColor === 'black') {
-            this.state.stats.blackTimeUsed += turnTime;
-        } else {
-            this.state.stats.whiteTimeUsed += turnTime;
-        }
-        this.lastTick = now;
-
         this.state.players[playerColor].moves++;
         this.state.passed[playerColor] = true;
-        
+
         if (this.state.passed.black && this.state.passed.white) {
             this.gameOverByPass();
             return;
@@ -961,20 +980,25 @@ const BadukClock = {
             if (window.speechSynthesis) window.speechSynthesis.cancel();
         }
         
-        this.updatePauseButton();
-        this.updateActivePlayerDisplay();
+        this.updateAllDisplays();
     },
 
     updatePauseButton() {
-        const pauseIcon = this.elements.btnPause.querySelector('.icon-pause');
-        const playIcon = this.elements.btnPause.querySelector('.icon-play');
-        
         if (this.state.paused) {
-            pauseIcon.classList.add('hidden');
-            playIcon.classList.remove('hidden');
+            this.elements.btnPause.textContent = 'RESUME';
         } else {
-            pauseIcon.classList.remove('hidden');
-            playIcon.classList.add('hidden');
+            this.elements.btnPause.textContent = 'PAUSE';
+        }
+
+        if (this.state.running && !this.state.paused && this.state.activePlayer) {
+            this.elements.btnPass.classList.remove('hidden');
+            this.elements.btnPause.classList.remove('hidden');
+        } else if (this.state.running && this.state.paused) {
+            this.elements.btnPass.classList.add('hidden');
+            this.elements.btnPause.classList.remove('hidden');
+        } else {
+            this.elements.btnPass.classList.add('hidden');
+            this.elements.btnPause.classList.add('hidden');
         }
     },
 
@@ -1031,15 +1055,12 @@ const BadukClock = {
         this.state.lastWarningSoundSecond = -1;
 
         this.elements.clockScreen.classList.remove('game-started');
-        this.elements.playerBlack.classList.remove('active', 'off', 'warning', 'critical', 'lost');
-        this.elements.playerWhite.classList.remove('active', 'off', 'warning', 'critical', 'lost');
 
         if (this.state.settings.system) {
             this.initializePlayers(this.state.settings);
-            this.updateAllDisplays();
         }
 
-        this.updatePauseButton();
+        this.updateAllDisplays();
         this.showScreen('clock');
     },
 
@@ -1070,6 +1091,23 @@ const BadukClock = {
         const progressBar = element.querySelector('.progress-bar');
         const tapHint = element.querySelector('.tap-hint');
 
+        // Update active/off/paused classes
+        if (this.state.activePlayer) {
+            if (this.state.activePlayer === playerColor) {
+                element.classList.add('active');
+                element.classList.remove('off');
+                if (this.state.paused) element.classList.add('paused');
+                else element.classList.remove('paused');
+            } else {
+                element.classList.remove('active', 'paused');
+                element.classList.add('off');
+            }
+            tapHint.classList.add('hidden');
+        } else {
+            element.classList.remove('active', 'paused', 'off');
+            tapHint.classList.remove('hidden');
+        }
+
         // Move counter display update
         const moveCounter = document.getElementById('move-counter-display');
         if (moveCounter) {
@@ -1082,14 +1120,12 @@ const BadukClock = {
             }
         }
 
-        if (this.state.activePlayer) {
-            tapHint.classList.add('hidden');
-        } else {
-            tapHint.classList.remove('hidden');
-        }
+        this.updatePauseButton();
 
-        let timeToShow;
+        let timeToShow = 0;
         let progress = 0;
+
+        if (!player) return;
 
         switch (this.state.system) {
             case 'absolute':
@@ -1138,18 +1174,6 @@ const BadukClock = {
         tenthsEl.textContent = formatted.tenths;
         progressBar.style.width = `${progress}%`;
 
-        // Update active/off classes
-        if (this.state.activePlayer) {
-            if (this.state.activePlayer === playerColor) {
-                element.classList.add('active');
-                element.classList.remove('off');
-                if (this.state.paused) element.classList.add('paused');
-                else element.classList.remove('paused');
-            } else {
-                element.classList.remove('active', 'paused');
-                element.classList.add('off');
-            }
-        }
     },
 
     updateDots(playerColor, remaining, total, inByoyomi) {
