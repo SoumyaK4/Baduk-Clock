@@ -147,27 +147,12 @@ html, body {
     z-index: 10;
 }
 
-#player-black.active {
-    animation: float-top 4.8s ease-in-out infinite;
-}
-
-#player-white.active {
-    animation: float-bottom 4.8s ease-in-out infinite;
+.player-area.active {
+    box-shadow: 0 18px 55px rgba(245,240,232,0.15);
 }
 
 .player-area.paused {
-    animation-play-state: paused;
     filter: brightness(0.8) saturate(0.7);
-}
-
-@keyframes float-top {
-    0%, 100% { transform: translateY(8px); box-shadow: 0 18px 55px rgba(245,240,232,0.15); }
-    50% { transform: translateY(16px); box-shadow: 0 30px 80px rgba(245,240,232,0.25); }
-}
-
-@keyframes float-bottom {
-    0%, 100% { transform: translateY(-8px); box-shadow: 0 -18px 55px rgba(245,240,232,0.15); }
-    50% { transform: translateY(-16px); box-shadow: 0 -30px 80px rgba(245,240,232,0.25); }
 }
 
 /* Critical/Warning state */
@@ -201,25 +186,36 @@ html, body {
 }
 
 .time-display {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: baseline;
-    gap: 4px;
     line-height: 1;
+    width: 100%;
+}
+
+.time-display::before {
+    content: '';
+    grid-column: 1;
 }
 
 .main-time {
+    grid-column: 2;
     font-family: 'DM Mono', monospace;
     font-size: clamp(48px, 16vmin, 110px);
     font-weight: 300;
     letter-spacing: -0.03em;
+    text-align: center;
 }
 
 .tenths-time {
+    grid-column: 3;
     font-family: 'DM Mono', monospace;
     font-size: clamp(20px, 6vmin, 44px);
     font-weight: 300;
     opacity: 0.6;
-    min-width: 2ch;
+    justify-self: start;
+    margin-left: 4px;
+    white-space: nowrap;
 }
 
 .status-info-container {
