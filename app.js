@@ -29,6 +29,8 @@ const BadukClock = {
 
     audioContext: null,
     timerInterval: null,
+    resetConfirmTimer: null,
+    resetPromptWasPaused: null,
     lastTick: null,
 
     elements: {},
@@ -73,6 +75,9 @@ const BadukClock = {
             statsSheet: document.getElementById('stats-sheet'),
             statsContent: document.getElementById('stats-content'),
             btnStatsDone: document.getElementById('btn-stats-done'),
+            resetConfirm: document.getElementById('reset-confirm'),
+            btnResetCancel: document.getElementById('btn-reset-cancel'),
+            btnResetConfirm: document.getElementById('btn-reset-confirm'),
             themeSelect: document.getElementById('theme-select'),
             settingName: document.getElementById('setting-name'),
             btnSaveSetting: document.getElementById('btn-save-setting'),
@@ -91,7 +96,14 @@ const BadukClock = {
         
         this.elements.btnSettings.addEventListener('click', () => this.showScreen('settings'));
         this.elements.btnPause.addEventListener('click', () => this.togglePause());
-        this.elements.btnReset.addEventListener('click', () => this.resetGame());
+        this.elements.btnReset.addEventListener('click', () => this.requestReset());
+        this.elements.btnResetCancel.addEventListener('click', () => this.hideResetConfirm());
+        this.elements.btnResetConfirm.addEventListener('click', () => this.resetGame());
+        this.elements.resetConfirm.addEventListener('click', (e) => {
+            if (e.target === this.elements.resetConfirm) {
+                this.hideResetConfirm();
+            }
+        });
         this.elements.btnPass.addEventListener('click', () => {
             if (this.state.activePlayer) {
                 this.handlePass(this.state.activePlayer);
@@ -152,6 +164,13 @@ const BadukClock = {
         });
 
         document.addEventListener('keydown', (e) => {
+            if (this.elements.resetConfirm.classList.contains('active')) {
+                if (e.code === 'Escape') {
+                    this.hideResetConfirm();
+                }
+                return;
+            }
+
             if (e.code === 'Space' && this.state.running) {
                 e.preventDefault();
                 this.togglePause();
@@ -1044,21 +1063,94 @@ const BadukClock = {
         `).join('');
     },
 
+    requestReset() {
+        if (!this.hasGameProgress()) {
+            this.resetGame();
+            return;
+        }
+
+        if (this.resetConfirmTimer) {
+            clearTimeout(this.resetConfirmTimer);
+            this.resetConfirmTimer = null;
+            this.resetGame();
+            return;
+        }
+
+        this.resetConfirmTimer = setTimeout(() => {
+            this.resetConfirmTimer = null;
+            this.showResetConfirm();
+        }, 280);
+    },
+
+    hasGameProgress() {
+        const players = this.state.players;
+        const moves = (players.black?.moves || 0) + (players.white?.moves || 0);
+        const timeUsed = this.state.stats.blackTimeUsed + this.state.stats.whiteTimeUsed;
+        return Boolean(this.state.activePlayer || moves > 0 || timeUsed > 0);
+    },
+
+    showResetConfirm() {
+        this.resetPromptWasPaused = this.state.paused;
+        if (this.state.running && !this.state.paused) {
+            this.state.paused = true;
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
+            this.updateAllDisplays();
+        }
+
+        this.elements.resetConfirm.classList.add('active');
+        this.elements.resetConfirm.setAttribute('aria-hidden', 'false');
+        this.elements.btnResetConfirm.focus();
+    },
+
+    hideResetConfirm(restorePause = true) {
+        if (this.resetConfirmTimer) {
+            clearTimeout(this.resetConfirmTimer);
+            this.resetConfirmTimer = null;
+        }
+
+        const wasActive = this.elements.resetConfirm.classList.contains('active');
+        this.elements.resetConfirm.classList.remove('active');
+        this.elements.resetConfirm.setAttribute('aria-hidden', 'true');
+
+        if (restorePause && wasActive && this.state.running && this.resetPromptWasPaused === false) {
+            this.state.paused = false;
+            this.lastTick = Date.now();
+            this.state.lastWarningSoundSecond = -1;
+            this.updateAllDisplays();
+        }
+        this.resetPromptWasPaused = null;
+    },
+
     resetGame() {
+        this.hideResetConfirm(false);
         if (this.timerInterval) clearInterval(this.timerInterval);
         if (window.speechSynthesis) window.speechSynthesis.cancel();
-        
+
+        const settings = this.state.settings.system ? this.state.settings : this.getSettings();
+        this.state.settings = settings;
+        this.state.system = settings.system;
         this.state.gameOver = false;
-        this.state.running = false;
+        this.state.running = true;
         this.state.paused = true;
         this.state.activePlayer = null;
         this.state.lastWarningSoundSecond = -1;
+        this.state.passed = {
+            black: false,
+            white: false
+        };
+        this.state.stats = {
+            startTime: Date.now(),
+            blackTimeUsed: 0,
+            whiteTimeUsed: 0
+        };
 
         this.elements.clockScreen.classList.remove('game-started');
+        this.elements.playerBlack.classList.remove('active', 'off', 'warning', 'critical', 'lost');
+        this.elements.playerWhite.classList.remove('active', 'off', 'warning', 'critical', 'lost');
+        this.removeHoldRing(this.elements.playerBlack);
+        this.removeHoldRing(this.elements.playerWhite);
 
-        if (this.state.settings.system) {
-            this.initializePlayers(this.state.settings);
-        }
+        this.initializePlayers(settings);
 
         this.updateAllDisplays();
         this.showScreen('clock');
